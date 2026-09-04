@@ -1,0 +1,306 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+
+  /* ---- theme tokens (default = light, overridden per [data-theme]) ---- */
+  --scheme: light;
+  --bg: #F7F7FB;
+  --bg-grad: radial-gradient(1200px 600px at 90% -10%, #EFF3FF 0%, transparent 60%), radial-gradient(1000px 500px at -10% 110%, #FFF6E8 0%, transparent 55%);
+  --surface: #FFFFFF;
+  --surface-2: #F1F2F8;
+  --fg: #14161F;
+  --fg-muted: #6B7080;
+  --line: rgba(20, 22, 31, 0.10);
+  --brand: #3D5DF7;
+  --brand-2: #5B7FFF;
+  --brand-fg: #FFFFFF;
+  --accent: #F5A524;
+  --bubble-user: #14161F;
+  --bubble-user-fg: #FFFFFF;
+  --success: #10B981;
+  --danger: #EF4444;
+}
+
+[data-theme="light"] {
+  --scheme: light;
+  --bg: #F7F7FB;
+  --bg-grad: radial-gradient(1200px 600px at 90% -10%, #EFF3FF 0%, transparent 60%), radial-gradient(1000px 500px at -10% 110%, #FFF6E8 0%, transparent 55%);
+  --surface: #FFFFFF;
+  --surface-2: #F1F2F8;
+  --fg: #14161F;
+  --fg-muted: #6B7080;
+  --line: rgba(20, 22, 31, 0.10);
+  --brand: #3D5DF7;
+  --brand-2: #5B7FFF;
+  --brand-fg: #FFFFFF;
+  --accent: #F5A524;
+  --bubble-user: #14161F;
+  --bubble-user-fg: #FFFFFF;
+  --success: #10B981;
+  --danger: #EF4444;
+}
+
+[data-theme="dark"] {
+  --scheme: dark;
+  --bg: #0B0D12;
+  --bg-grad: radial-gradient(1200px 600px at 90% -10%, rgba(108,140,255,0.14) 0%, transparent 60%), radial-gradient(1000px 500px at -10% 110%, rgba(255,184,77,0.08) 0%, transparent 55%);
+  --surface: #14161D;
+  --surface-2: #1B1E27;
+  --fg: #EDEFF5;
+  --fg-muted: #9096A6;
+  --line: rgba(255, 255, 255, 0.09);
+  --brand: #6C8CFF;
+  --brand-2: #839CFF;
+  --brand-fg: #0B0D12;
+  --accent: #FFB84D;
+  --bubble-user: #6C8CFF;
+  --bubble-user-fg: #0B0D12;
+  --success: #34D399;
+  --danger: #F87171;
+}
+
+[data-theme="ocean"] {
+  --scheme: dark;
+  --bg: #071B2B;
+  --bg-grad: radial-gradient(1200px 600px at 90% -10%, rgba(35,196,216,0.16) 0%, transparent 60%), radial-gradient(1000px 500px at -10% 110%, rgba(255,180,84,0.08) 0%, transparent 55%);
+  --surface: #0E2A3F;
+  --surface-2: #123449;
+  --fg: #E4F3FF;
+  --fg-muted: #8FB3C9;
+  --line: rgba(255, 255, 255, 0.09);
+  --brand: #23C4D8;
+  --brand-2: #4EDCEE;
+  --brand-fg: #04212A;
+  --accent: #FFB454;
+  --bubble-user: #23C4D8;
+  --bubble-user-fg: #04212A;
+  --success: #34D399;
+  --danger: #FF8585;
+}
+
+[data-theme="sunset"] {
+  --scheme: dark;
+  --bg: #2B0F1E;
+  --bg-grad: radial-gradient(1200px 600px at 90% -10%, rgba(255,107,107,0.18) 0%, transparent 60%), radial-gradient(1000px 500px at -10% 110%, rgba(255,209,102,0.10) 0%, transparent 55%);
+  --surface: #3A1526;
+  --surface-2: #47192E;
+  --fg: #FFEFE9;
+  --fg-muted: #D9A8B6;
+  --line: rgba(255, 255, 255, 0.10);
+  --brand: #FF6B6B;
+  --brand-2: #FF8C8C;
+  --brand-fg: #2B0F1E;
+  --accent: #FFD166;
+  --bubble-user: #FF6B6B;
+  --bubble-user-fg: #2B0F1E;
+  --success: #4ADE80;
+  --danger: #FCA5A5;
+}
+
+[data-theme="forest"] {
+  --scheme: dark;
+  --bg: #0E1A13;
+  --bg-grad: radial-gradient(1200px 600px at 90% -10%, rgba(76,175,125,0.16) 0%, transparent 60%), radial-gradient(1000px 500px at -10% 110%, rgba(233,196,106,0.08) 0%, transparent 55%);
+  --surface: #16261B;
+  --surface-2: #1C3024;
+  --fg: #E7F3E9;
+  --fg-muted: #9AC0A6;
+  --line: rgba(255, 255, 255, 0.09);
+  --brand: #4CAF7D;
+  --brand-2: #6EC79B;
+  --brand-fg: #0E1A13;
+  --accent: #E9C46A;
+  --bubble-user: #4CAF7D;
+  --bubble-user-fg: #0E1A13;
+  --success: #6EE7B7;
+  --danger: #F87171;
+}
+
+/* ---- RGB-triplet variants so Tailwind's alpha-modifier utilities
+   (e.g. text-fg/60, bg-surface/80) can react to the active theme too. ---- */
+:root,
+[data-theme="light"] {
+  --fg-rgb: 20 22 31;
+  --bg-rgb: 247 247 251;
+  --surface-rgb: 255 255 255;
+  --surface-2-rgb: 241 242 248;
+  --brand-rgb: 61 93 247;
+}
+[data-theme="dark"] {
+  --fg-rgb: 237 239 245;
+  --bg-rgb: 11 13 18;
+  --surface-rgb: 20 22 29;
+  --surface-2-rgb: 27 30 39;
+  --brand-rgb: 108 140 255;
+}
+[data-theme="ocean"] {
+  --fg-rgb: 228 243 255;
+  --bg-rgb: 7 27 43;
+  --surface-rgb: 14 42 63;
+  --surface-2-rgb: 18 52 73;
+  --brand-rgb: 35 196 216;
+}
+[data-theme="sunset"] {
+  --fg-rgb: 255 239 233;
+  --bg-rgb: 43 15 30;
+  --surface-rgb: 58 21 38;
+  --surface-2-rgb: 71 25 46;
+  --brand-rgb: 255 107 107;
+}
+[data-theme="forest"] {
+  --fg-rgb: 231 243 233;
+  --bg-rgb: 14 26 19;
+  --surface-rgb: 22 38 27;
+  --surface-2-rgb: 28 48 36;
+  --brand-rgb: 76 175 125;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: var(--scheme);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+::selection {
+  background-color: #DCE5FF;
+}
+
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid #3D5DF7;
+  outline-offset: 2px;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.25s ease-out;
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.92) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-pop-in {
+  animation: pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+.dot-bounce span {
+  animation: bounce-dot 1.1s infinite ease-in-out;
+}
+.dot-bounce span:nth-child(2) { animation-delay: 0.15s; }
+.dot-bounce span:nth-child(3) { animation-delay: 0.3s; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #DCE5FF; border-radius: 999px; }
+
+.input {
+  @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-fg placeholder:text-fg/30 outline-none transition-all duration-200 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Shared "premium" surface language — used by the landing page, merchant */
+/* dashboard and login so the rest of the app matches the storefront chat. */
+/* ---------------------------------------------------------------------- */
+
+/* Fallback for the tab-transition wrapper before JS/framer-motion mounts,
+   so navigation never feels like a hard, static page swap. */
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tab-transition {
+  animation: tab-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.mesh-bg {
+  background-color: var(--bg, #F7F7FB);
+  background-image: var(--bg-grad, none);
+}
+
+.grid-overlay {
+  background-image:
+    linear-gradient(to right, rgba(18,21,27,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(18,21,27,0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+.glass {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+.gradient-text {
+  background: linear-gradient(100deg, #3D5DF7 0%, #6E4CF0 45%, #F5A524 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-x 6s ease infinite;
+}
+
+.glow-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+.shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%);
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.shine:hover::after {
+  opacity: 1;
+  animation: shimmer 1.1s linear;
+}
+
+.card-hover {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 1px 2px rgba(18,21,27,0.04), 0 20px 40px -16px rgba(61,93,247,0.28);
+  border-color: rgba(61,93,247,0.25);
+}
+
+.stagger > * {
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.21s; }
+.stagger > *:nth-child(5) { animation-delay: 0.27s; }
+.stagger > *:nth-child(6) { animation-delay: 0.33s; }
+.stagger > *:nth-child(7) { animation-delay: 0.39s; }
+.stagger > *:nth-child(8) { animation-delay: 0.45s; }

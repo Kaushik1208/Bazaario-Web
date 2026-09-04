@@ -1,0 +1,264 @@
+// AI Merchant Commerce Platform — Prisma schema
+// Provider is PostgreSQL for production use (Razorpay Buildathon deliverable).
+// For quick local/demo runs without a Postgres instance, you can switch
+// provider to "sqlite" and DATABASE_URL to "file:./dev.db" — the schema
+// intentionally avoids native enum types so it works unmodified on both.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Core identity ----------
+
+model Merchant {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  logoEmoji     String   @default("🛍️")
+  // Real-world identity so a storefront looks like a real shop, not a demo:
+  phone         String?
+  address       String?
+  logoImageUrl  String?  // data-URL or hosted URL of the shop's real logo/photo
+  coverImageUrl String?  // real photo of the shop front / interior
+  // Exactly one merchant in the dataset is flagged as the judge-facing demo;
+  // every other merchant is a real, independently-run storefront.
+  isDemo        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  products      Product[]
+  rules         MerchantRule[]
+  carts         Cart[]
+  orders        Order[]
+  auditLogs     AuditLog[]
+  aiInteractions AIInteraction[]
+}
+
+// role: "OWNER" | "STAFF"
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("OWNER")
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+}
+
+// A shopper account — separate from Merchant/User (store staff). Optional
+// identity layer on top of the anonymous, session-based cart/chat flow:
+// customers can sign up to save their name/email and preferences, without
+// changing how anonymous carts and orders already work.
+model Customer {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  notifyOrderUpdates Boolean @default(true)
+  notifyPromotions   Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  savedItems   SavedItem[]
+  orders       Order[]
+}
+
+// A customer's wishlist / saved-for-later items, shown in Account > Saved items.
+model SavedItem {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+}
+
+// ---------- Catalog ----------
+
+model Product {
+  id           String   @id @default(cuid())
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  name         String
+  slug         String
+  category     String
+  description  String
+  features     String   // JSON-encoded string[] of feature bullets
+  priceInPaise Int
+  imageEmoji   String   @default("📦")
+  imageUrl     String?  // real photo of the item; falls back to imageEmoji when unset
+  isActive     Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  inventory    Inventory?
+  relationsFrom ProductRelation[] @relation("FromProduct")
+  relationsTo   ProductRelation[] @relation("ToProduct")
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  savedBy      SavedItem[]
+
+  @@unique([merchantId, slug])
+  @@index([merchantId, category])
+}
+
+model Inventory {
+  id          String  @id @default(cuid())
+  productId   String  @unique
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockCount  Int     @default(0)
+  lowStockAt  Int     @default(5)
+  updatedAt   DateTime @updatedAt
+}
+
+// relationType: "UPSELL" | "CROSS_SELL"
+model ProductRelation {
+  id             String  @id @default(cuid())
+  fromProductId  String
+  toProductId    String
+  relationType   String
+  note           String?
+
+  fromProduct    Product @relation("FromProduct", fields: [fromProductId], references: [id], onDelete: Cascade)
+  toProduct      Product @relation("ToProduct", fields: [toProductId], references: [id], onDelete: Cascade)
+
+  @@unique([fromProductId, toProductId, relationType])
+}
+
+// ruleType: "MAX_DISCOUNT_PERCENT" | "MAX_TRANSACTION_AMOUNT" | "MAX_UPSELLS_PER_CHAT" | "ALLOW_CROSS_SELL" | "ALLOW_UPSELL"
+model MerchantRule {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  ruleType   String
+  value      String   // stringified number/boolean, interpreted per ruleType
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+// ---------- Commerce ----------
+
+// status: "ACTIVE" | "CHECKED_OUT" | "ABANDONED"
+// channel: "CUSTOMER_CHAT" | "AGENT_API"
+model Cart {
+  id           String   @id @default(cuid())
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  sessionId    String
+  channel      String   @default("CUSTOMER_CHAT")
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items        CartItem[]
+  orders       Order[]
+
+  @@index([merchantId, sessionId])
+}
+
+model CartItem {
+  id          String  @id @default(cuid())
+  cartId      String
+  cart        Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  quantity    Int     @default(1)
+  addedVia    String  @default("CUSTOMER") // "CUSTOMER" | "AI_RECOMMENDATION" | "AI_UPSELL" | "AI_CROSS_SELL"
+  unitPriceInPaise Int // price snapshot at time of add
+}
+
+// status: "PENDING_PAYMENT" | "PAID" | "PAYMENT_FAILED" | "CANCELLED"
+model Order {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  cartId          String
+  cart            Cart     @relation(fields: [cartId], references: [id])
+  sessionId       String
+  // Set only when the shopper was signed in as a customer at checkout —
+  // guest checkouts (the common case) leave this null. Powers "My Orders".
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  channel         String   @default("CUSTOMER_CHAT")
+  status          String   @default("PENDING_PAYMENT")
+  subtotalInPaise Int
+  discountInPaise Int      @default(0)
+  totalInPaise    Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           OrderItem[]
+  payments        Payment[]
+  auditLogs       AuditLog[]
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  productName String
+  quantity    Int
+  unitPriceInPaise Int
+  addedVia    String  @default("CUSTOMER")
+}
+
+// status: "CREATED" | "SUCCESS" | "FAILED"
+model Payment {
+  id                 String   @id @default(cuid())
+  orderId            String
+  order              Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  razorpayOrderId    String
+  razorpayPaymentId  String?
+  status             String   @default("CREATED")
+  amountInPaise      Int
+  failureReason      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ---------- Trust & observability ----------
+
+// actor: "CUSTOMER" | "MERCHANT_AI_AGENT" | "MERCHANT" | "SYSTEM" | "AGENT_API"
+model AuditLog {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id])
+  sessionId  String?
+  actor      String
+  action     String   // e.g. "CATALOG_SEARCH", "PRODUCT_RECOMMENDATION", "UPSELL_SUGGESTED", "CUSTOMER_ACCEPTED", "PRICE_VALIDATED", "PAYMENT_AUTHORIZED", "RAZORPAY_ORDER_CREATED", "PAYMENT_RESULT", "PAYMENT_FAILED", "RULE_BLOCKED"
+   detail     String   // JSON-encoded string with structured context
+  createdAt  DateTime @default(now())
+
+  @@index([merchantId, createdAt])
+}
+
+// role: "CUSTOMER" | "ASSISTANT" | "SYSTEM"
+model AIInteraction {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  sessionId   String
+  role        String
+  message     String
+  meta        String?  // JSON-encoded: recommended product ids, upsell ids, reasoning, etc.
+  createdAt   DateTime @default(now())
+
+  @@index([merchantId, sessionId])
+}
