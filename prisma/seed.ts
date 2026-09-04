@@ -1,19 +1,20 @@
+Seed · TS
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
+ 
 const prisma = new PrismaClient();
-
+ 
 async function hash(pw: string) {
   return bcrypt.hash(pw, 10);
 }
-
+ 
 function feat(...items: string[]) {
   return JSON.stringify(items);
 }
-
+ 
 async function main() {
   console.log("Seeding…");
-
+ 
   // ---------- Merchant 1: GearHub (gaming peripherals) ----------
   const gearhub = await prisma.merchant.upsert({
     where: { slug: "gearhub" },
@@ -36,7 +37,7 @@ async function main() {
       coverImageUrl: "https://picsum.photos/seed/gearhub-cover/1200/400",
     },
   });
-
+ 
   await prisma.user.upsert({
     where: { email: "owner@gearhub.demo" },
     update: {},
@@ -48,7 +49,7 @@ async function main() {
       merchantId: gearhub.id,
     },
   });
-
+ 
   const gearhubProducts = [
     {
       name: "Volt X2 Wired Headphones",
@@ -131,13 +132,16 @@ async function main() {
       stock: 15,
     },
   ];
-
+ 
   const gearhubIds: Record<string, string> = {};
   for (const p of gearhubProducts) {
-    const imageUrl = `https://picsum.photos/seed/${p.slug}/500/500`;
+    // No imageUrl set here on purpose — picsum.photos returns a random,
+    // unrelated stock photo per seed string, which doesn't match the
+    // product. Leaving imageUrl unset makes the UI fall back to the
+    // correct imageEmoji (⌨️, 🖱️, 🎧, etc.) defined above per product.
     const created = await prisma.product.upsert({
       where: { merchantId_slug: { merchantId: gearhub.id, slug: p.slug } },
-      update: { imageUrl },
+      update: { imageUrl: null },
       create: {
         merchantId: gearhub.id,
         name: p.name,
@@ -147,13 +151,12 @@ async function main() {
         features: p.features,
         priceInPaise: p.priceInPaise,
         imageEmoji: p.imageEmoji,
-        imageUrl,
         inventory: { create: { stockCount: p.stock } },
       },
     });
     gearhubIds[p.slug] = created.id;
   }
-
+ 
   async function relate(fromSlug: string, toSlug: string, type: "UPSELL" | "CROSS_SELL") {
     const fromId = gearhubIds[fromSlug];
     const toId = gearhubIds[toSlug];
@@ -164,7 +167,7 @@ async function main() {
       create: { fromProductId: fromId, toProductId: toId, relationType: type },
     });
   }
-
+ 
   await relate("aeris-wireless-headphones", "aeris-pro-7-1-headphones", "UPSELL");
   await relate("aeris-wireless-headphones", "gearhub-carry-case", "CROSS_SELL");
   await relate("volt-x2-wired-headphones", "aeris-wireless-headphones", "UPSELL");
@@ -173,7 +176,7 @@ async function main() {
   await relate("striker-wired-mouse", "nimbus-mousepad-xl", "CROSS_SELL");
   await relate("striker-rgb-mouse", "nimbus-mousepad-xl", "CROSS_SELL");
   await relate("cascade-tkl-mechanical-keyboard", "nimbus-mousepad-xl", "CROSS_SELL");
-
+ 
   await prisma.merchantRule.createMany({
     data: [
       { merchantId: gearhub.id, ruleType: "MAX_DISCOUNT_PERCENT", value: "10", isActive: true },
@@ -183,7 +186,7 @@ async function main() {
       { merchantId: gearhub.id, ruleType: "ALLOW_CROSS_SELL", value: "true", isActive: true },
     ],
   });
-
+ 
   // ---------- Demo customer (so reviewers can see the shopper side too) ----------
   const demoCustomer = await prisma.customer.upsert({
     where: { email: "shopper@bazaario.demo" },
@@ -197,7 +200,7 @@ async function main() {
       notifyPromotions: true,
     },
   });
-
+ 
   const savedSlugs = ["aeris-wireless-headphones", "cascade-tkl-mechanical-keyboard"].filter((s) => gearhubIds[s]);
   for (const slug of savedSlugs) {
     await prisma.savedItem.upsert({
@@ -206,19 +209,19 @@ async function main() {
       create: { customerId: demoCustomer.id, productId: gearhubIds[slug] },
     });
   }
-
+ 
   // Bazaario is a real, multi-tenant platform — anyone can sign up at
   // /merchant/signup and get their own live storefront with its own catalog.
   // Exactly ONE seeded merchant (GearHub, flagged isDemo: true above) exists
   // purely so judges/reviewers have something to shop from with zero setup.
   // Every other store on the platform is created by real signups and is
   // never mixed into the "demo" surface on the landing page.
-
+ 
   console.log("Seed complete.");
   console.log("Demo merchant: gearhub (isDemo: true) — owner@gearhub.demo / demo1234");
   console.log("Demo customer: shopper@bazaario.demo / demo1234");
 }
-
+ 
 main()
   .catch((e) => {
     console.error(e);
@@ -227,3 +230,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+ 
