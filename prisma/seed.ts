@@ -32,8 +32,8 @@ async function main() {
       isDemo: true,
       phone: "+91 98765 43210",
       address: "Shop 14, Bramhapuri Market, Kattankulathur, Tamil Nadu 603203",
-      logoImageUrl: "https://picsum.photos/seed/gearhub-logo/200/200",
-      coverImageUrl: "https://picsum.photos/seed/gearhub-cover/1200/400",
+      logoImageUrl: "https://setupgame.ma/wp-content/uploads/2024/05/Setup-Game-Casablanca3.jpg",
+      coverImageUrl: "https://gameon.store/cdn/shop/collections/Accessories_Category_Banner.png?v=1769588578&width=2000", 
     },
   });
  
