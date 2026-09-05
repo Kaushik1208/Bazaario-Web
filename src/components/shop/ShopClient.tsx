@@ -57,6 +57,7 @@ export function ShopClient({ merchantSlug, merchantName, logoEmoji }: { merchant
 
   const [checkingOut, setCheckingOut] = useState(false);
   const [razorpayReady, setRazorpayReady] = useState(false);
+  const [razorpayLoadFailed, setRazorpayLoadFailed] = useState(false);
   const [payment, setPayment] = useState<{
     open: boolean;
     orderId: string | null;
@@ -311,8 +312,35 @@ export function ShopClient({ merchantSlug, merchantName, logoEmoji }: { merchant
     }
 
     // Real Razorpay Test Mode: launch the actual Checkout.js widget.
-    if (!razorpayReady || !window.Razorpay || !payment.razorpayOrderId || !payment.razorpayKeyId) {
+    if (!payment.razorpayOrderId || !payment.razorpayKeyId) {
       setPayment((p) => (p ? { ...p, phase: "failed", failureReason: "Razorpay checkout could not be loaded." } : p));
+      return;
+    }
+
+    // The checkout.js script loads with strategy="afterInteractive", so it can
+    // still be mid-load when the customer clicks "Confirm & pay" — wait briefly
+    // for it instead of failing immediately.
+    if (!razorpayReady || !window.Razorpay) {
+      if (razorpayLoadFailed) {
+        setPayment((p) =>
+          p ? { ...p, phase: "failed", failureReason: "Razorpay checkout couldn't load — check your connection or disable ad-blockers, then retry." } : p
+        );
+        return;
+      }
+      setPayment((p) => (p ? { ...p, phase: "processing" } : p));
+      const waitStart = Date.now();
+      const poll = setInterval(() => {
+        if (window.Razorpay) {
+          clearInterval(poll);
+          setPayment((p) => (p ? { ...p, phase: "confirm" } : p));
+          confirmPayment(simulateOutcome);
+        } else if (Date.now() - waitStart > 6000) {
+          clearInterval(poll);
+          setPayment((p) =>
+            p ? { ...p, phase: "failed", failureReason: "Razorpay checkout couldn't load — check your connection or disable ad-blockers, then retry." } : p
+          );
+        }
+      }, 300);
       return;
     }
 
@@ -376,6 +404,7 @@ export function ShopClient({ merchantSlug, merchantName, logoEmoji }: { merchant
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="afterInteractive"
         onLoad={() => setRazorpayReady(true)}
+        onError={() => setRazorpayLoadFailed(true)}
       />
 
       <header
